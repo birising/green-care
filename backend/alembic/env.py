@@ -5,11 +5,12 @@ import sys
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+# Přidání root adresáře projektu do sys.path
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
-from app import models  # noqa: F401,E402
+from app import models  # noqa: F401,E402 – zajistí načtení všech modelů
 from app.db.base import Base  # noqa: E402
 
 config = context.config
@@ -18,12 +19,20 @@ if config.config_file_name is not None:
 
 # Allow database URL via -x db_url=... or environment variable
 x_args = context.get_x_argument(as_dictionary=True)
-db_url = x_args.get("db_url") or os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+db_url = (
+    x_args.get("db_url")
+    or os.getenv("DATABASE_URL")
+    or config.get_main_option("sqlalchemy.url")
+)
 if not db_url:
-    raise RuntimeError("Database URL must be provided via -x db_url=, env DATABASE_URL, or sqlalchemy.url in alembic.ini")
+    raise RuntimeError(
+        "Database URL must be provided via -x db_url=, env DATABASE_URL, "
+        "or sqlalchemy.url in alembic.ini"
+    )
 
 config.set_main_option("sqlalchemy.url", db_url)
 
+# Pro autogenerate je potřeba metadata
 target_metadata = Base.metadata
 
 
