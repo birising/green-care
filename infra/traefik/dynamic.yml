@@ -1,0 +1,4 @@
+tls:
+  certificates:
+    - certFile: /etc/ssl/dev/dev.pem
+      keyFile: /etc/ssl/dev/dev-key.pem
