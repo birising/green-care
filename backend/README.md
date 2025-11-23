@@ -1,4 +1,38 @@
-# Backend schema and data import
+
+# Backend schema, data import, and API
+
+## FastAPI application
+
+### Configuration
+Copy `.env.example` to `.env` and fill in your database connection string (asyncpg driver):
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+### Run the API
+Install dependencies and start uvicorn from the repository root:
+
+```bash
+pip install -r backend/requirements.txt
+uvicorn app.main:app --app-dir backend --reload
+```
+
+Health check: `GET http://localhost:8000/health`
+
+Available routers under the `/api/v1` prefix:
+- `GET /greens`
+- `GET /lamps`
+- `GET /bins`
+- `GET /bins/{id}`
+
+### Run tests
+The API layer can be smoke-tested without a database using the bundled fakes:
+
+```bash
+pip install -r backend/requirements.txt
+pytest backend/tests
+```
 
 ## SQL schema
 The raw SQL schema lives in [`schema.sql`](schema.sql) and can be applied with `psql`:
