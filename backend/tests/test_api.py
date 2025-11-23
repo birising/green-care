@@ -5,6 +5,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.core.config import settings
+
 from app.db.session import get_session
 
 
@@ -20,11 +22,32 @@ class FakeResult:
 
 
 class FakeSession:
-    def __init__(self, rows):
+
+    def __init__(self, rows, scalar_result=1):
         self._rows = rows
+        self._scalar_result = scalar_result
+        self.added_objects = []
+        self._next_id = 1
+
 
     async def execute(self, _query):
         return FakeResult(self._rows)
+
+
+    async def scalar(self, _query):
+        return self._scalar_result
+
+    def add(self, obj):
+        self.added_objects.append(obj)
+
+    async def commit(self):
+        return None
+
+    async def refresh(self, obj):
+        if getattr(obj, "id", None) is None:
+            obj.id = self._next_id
+            self._next_id += 1
+
 
 
 @pytest.fixture(autouse=True)
@@ -146,3 +169,98 @@ def test_get_bin_not_found_returns_404():
     response = client.get("/api/v1/bins/999")
     assert response.status_code == 404
     assert response.json()["detail"] == "Bin not found"
+
+
+def test_post_bin_telemetry_requires_token():
+    settings.telemetry_api_tokens = "valid-token"
+
+    async def override_session():
+        yield FakeSession([])
+
+    app.dependency_overrides[get_session] = override_session
+    client = TestClient(app)
+
+    response = client.post("/api/v1/bins/1/telemetry", json={"fill_level": 10})
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid or missing API token"
+
+
+def test_post_bin_telemetry_accepts_valid_token_and_persists():
+    settings.telemetry_api_tokens = "valid-token"
+    telemetry_rows = []
+
+    async def override_session():
+        yield FakeSession(telemetry_rows)
+
+    app.dependency_overrides[get_session] = override_session
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/bins/5/telemetry",
+        json={"fill_level": 42.5, "battery_level": 95.0},
+        headers={"X-API-TOKEN": "valid-token"},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["bin_id"] == 5
+    assert body["fill_level"] == 42.5
+    assert body["battery_level"] == 95.0
+
+
+def test_get_bin_telemetry_returns_entries():
+    settings.telemetry_api_tokens = "valid-token"
+    rows = [
+        type(
+            "Row",
+            (),
+            {
+                "id": 1,
+                "bin_id": 7,
+                "fill_level": 10.0,
+                "battery_level": 50.0,
+                "temperature": 21.5,
+                "at_time": datetime(2024, 6, 1, 12, 0, 0),
+            },
+        )(),
+        type(
+            "Row",
+            (),
+            {
+                "id": 2,
+                "bin_id": 7,
+                "fill_level": None,
+                "battery_level": None,
+                "temperature": None,
+                "at_time": datetime(2024, 6, 1, 13, 0, 0),
+            },
+        )(),
+    ]
+
+    async def override_session():
+        yield FakeSession(rows)
+
+    app.dependency_overrides[get_session] = override_session
+    client = TestClient(app)
+
+    response = client.get("/api/v1/bins/7/telemetry")
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "id": 1,
+            "bin_id": 7,
+            "fill_level": 10.0,
+            "battery_level": 50.0,
+            "temperature": 21.5,
+            "at_time": "2024-06-01T12:00:00",
+        },
+        {
+            "id": 2,
+            "bin_id": 7,
+            "fill_level": None,
+            "battery_level": None,
+            "temperature": None,
+            "at_time": "2024-06-01T13:00:00",
+        },
+    ]
+

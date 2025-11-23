@@ -1,4 +1,7 @@
 
+=======
+
+
 # Backend schema, data import, and API
 
 ## FastAPI application
@@ -8,6 +11,13 @@ Copy `.env.example` to `.env` and fill in your database connection string (async
 
 ```bash
 cp backend/.env.example backend/.env
+```
+
+
+Set the comma-separated telemetry tokens used to protect bin telemetry ingestion (header `X-API-TOKEN`):
+
+```
+TELEMETRY_API_TOKENS=telemetry-token-1,telemetry-token-2
 ```
 
 ### Run the API
@@ -25,6 +35,24 @@ Available routers under the `/api/v1` prefix:
 - `GET /lamps`
 - `GET /bins`
 - `GET /bins/{id}`
+
+- `GET /bins/{id}/telemetry`
+- `POST /bins/{id}/telemetry` (requires `X-API-TOKEN`)
+
+Example curl calls for telemetry (replace token and host as needed):
+
+```bash
+# Valid request
+curl -X POST "http://localhost:8000/api/v1/bins/1/telemetry" \
+  -H "Content-Type: application/json" \
+  -H "X-API-TOKEN: telemetry-token-1" \
+  -d '{"fill_level": 55.5, "battery_level": 90.0, "temperature": 21.5}'
+
+# Invalid/missing token
+curl -X POST "http://localhost:8000/api/v1/bins/1/telemetry" \
+  -H "Content-Type: application/json" \
+  -d '{"fill_level": 55.5}'
+```
 
 ### Run tests
 The API layer can be smoke-tested without a database using the bundled fakes:
