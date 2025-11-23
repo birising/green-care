@@ -1,5 +1,7 @@
 import json
+
 from datetime import datetime, timezone
+
 from typing import Sequence
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,11 +9,16 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import func
 
+
 from app.api.deps import require_api_token
 from app.db.session import get_session
 from app.models import Bin as BinModel
 from app.models import BinTelemetry
 from app.schemas import Bin, Telemetry, TelemetryInput
+
+from app.db.session import get_session
+from app.models import Bin as BinModel
+from app.schemas import Bin
 
 router = APIRouter(prefix="/bins", tags=["bins"])
 
@@ -63,6 +70,7 @@ async def get_bin(bin_id: int, session: AsyncSession = Depends(get_session)) -> 
         raise HTTPException(status_code=404, detail="Bin not found")
 
     return _to_schema(row)
+
 
 
 def _telemetry_to_schema(row: tuple) -> Telemetry:

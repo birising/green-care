@@ -15,6 +15,7 @@ class Bin(BaseModel):
     updated_at: datetime | None = None
 
 
+
 class TelemetryInput(BaseModel):
     fill_level: float | None = None
     battery_level: float | None = None

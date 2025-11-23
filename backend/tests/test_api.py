@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.core.config import settings
+
 from app.db.session import get_session
 
 
@@ -21,14 +22,17 @@ class FakeResult:
 
 
 class FakeSession:
+
     def __init__(self, rows, scalar_result=1):
         self._rows = rows
         self._scalar_result = scalar_result
         self.added_objects = []
         self._next_id = 1
 
+
     async def execute(self, _query):
         return FakeResult(self._rows)
+
 
     async def scalar(self, _query):
         return self._scalar_result
@@ -43,6 +47,7 @@ class FakeSession:
         if getattr(obj, "id", None) is None:
             obj.id = self._next_id
             self._next_id += 1
+
 
 
 @pytest.fixture(autouse=True)
@@ -258,3 +263,4 @@ def test_get_bin_telemetry_returns_entries():
             "at_time": "2024-06-01T13:00:00",
         },
     ]
+

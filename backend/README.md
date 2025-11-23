@@ -1,3 +1,7 @@
+
+=======
+
+
 # Backend schema, data import, and API
 
 ## FastAPI application
@@ -8,6 +12,7 @@ Copy `.env.example` to `.env` and fill in your database connection string (async
 ```bash
 cp backend/.env.example backend/.env
 ```
+
 
 Set the comma-separated telemetry tokens used to protect bin telemetry ingestion (header `X-API-TOKEN`):
 
@@ -30,6 +35,7 @@ Available routers under the `/api/v1` prefix:
 - `GET /lamps`
 - `GET /bins`
 - `GET /bins/{id}`
+
 - `GET /bins/{id}/telemetry`
 - `POST /bins/{id}/telemetry` (requires `X-API-TOKEN`)
 
